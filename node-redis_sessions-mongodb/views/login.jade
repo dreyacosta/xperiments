@@ -1,0 +1,10 @@
+extends layout
+
+block content
+  if session.username
+    h1 #{session.username}
+  else
+    form(action='/login', method='post')
+      input(type='text', id='username', name='username', placeholder='Username', required)
+      input(type='password', id='pass', name='pass', placeholder='Password', required)
+      input(type='submit', id="send", value='Enviar')
