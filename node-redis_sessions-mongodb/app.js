@@ -1,14 +1,16 @@
-var express = require('express');
-var routes = require('./routes');
-var user = require('./routes/user');
-var http = require('http');
-var path = require('path');
+var express = require('express'),
+    routes  = require('./routes'),
+    user    = require('./routes/user'),
+    http    = require('http'),
+    path    = require('path'),
+    pass    = require('pwd');
 
 var app = express();
 
-var mongoose = require('mongoose');
-var RedisStore = require('connect-redis')(express);
-var pass = require('pwd');
+var mongoose   = require('mongoose'),
+    RedisStore = require('connect-redis')(express);
+
+var functions = require('./routes/functions');
 
 // all environments
 app.set('port', process.env.PORT || 3000);
@@ -18,20 +20,36 @@ app.use(express.favicon());
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
 app.use(express.methodOverride());
-app.use(express.cookieParser('your secret here'));
+app.use(express.cookieParser('caaaaaat'));
+
 app.use(express.session({
   store: new RedisStore({
     host: 'localhost',
     port: 6379,
     db: 'foo',
-    ttl: 10000
+    ttl: 60000
   }),
-  cookie: {maxAge: 10000},
+  cookie: {maxAge: 60000},
   secret: '1234567890QWERTY'
 }));
+
+app.use(express.compress({
+  filter: function(req, res) {
+    return (/json|text|javascript|css/).test(res.getHeader('Content-Type'));
+  },
+  level: 9
+}));
+
 app.use(app.router);
 app.use(require('stylus').middleware(__dirname + '/public'));
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(function(req, res, next) {
+  res.status(404).render('404', {
+    url: req.originalUrl,
+    error: 'Not found'
+  });
+});
 
 // development only
 if ('development' == app.get('env')) {
@@ -53,65 +71,34 @@ var userSchema = mongoose.Schema({
 });
 var User = mongoose.model('user', userSchema);
 
-var loginUser = function(userData, req, res) {
-  User.findOne({username: userData.username}, function (err, user) {
-    if (err) throw err;
-    console.log(user);
-    pass.hash(userData.pass, user.salt, function(err, hash){
-      if (user.pass == hash) {
-        console.log('Enter to hash');
-        req.session.regenerate(function(){
-          req.session.username = user.username;
-          res.redirect('/login');
-        });
-      }
-    });
-  });
-}
-
-var registerUser = function(userData, res) {
-  var user = new User();
-
-  pass.hash(userData.pass, function(err, salt, hash){
-    user.salt = salt;
-    user.pass = hash;
-
-    user.username = userData.username;
-
-    user.save();
-
-    res.redirect('/');
-  });
-}
-
-var registerForm = function(req, res) {
-  var userData = {};
-
-  userData.username = req.param('username');
-  userData.pass = req.param('pass');
-
-  registerUser(userData, res);
-}
-
-app.post('/register', registerForm);
+app.get('/', function(req, res) {
+  res.render('index', {});
+});
 
 app.get('/register', function(req, res) {
   res.render('register', {});
 });
 
-var loginForm = function(req, res) {
-  var userData = {};
+app.post('/register', function(req, res) {
+  var userdata = {};
 
-  userData.username = req.param('username');
-  userData.pass = req.param('pass');
+  userdata.username = req.param('username');
+  userdata.pass = req.param('pass');
 
-  loginUser(userData, req, res);
-}
-
-app.post('/login', loginForm);
+  functions.registerUser(User, pass, userdata, res);
+});
 
 app.get('/login', function(req, res) {
   res.render('login', {session: req.session});
+});
+
+app.post('/login', function(req, res) {
+  var userdata = {};
+
+  userdata.username = req.param('username');
+  userdata.pass = req.param('pass');
+
+  functions.loginUser(User, pass, userdata, req, res);
 });
 
 http.createServer(app).listen(app.get('port'), function(){
