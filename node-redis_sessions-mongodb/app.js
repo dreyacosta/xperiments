@@ -12,6 +12,8 @@ var mongoose   = require('mongoose'),
 
 var functions = require('./routes/functions');
 
+console.log(process.argv[2]);
+
 // all environments
 app.set('port', process.env.PORT || 3000);
 app.set('views', __dirname + '/views');
