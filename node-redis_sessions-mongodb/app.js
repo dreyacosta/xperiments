@@ -12,8 +12,6 @@ var mongoose   = require('mongoose'),
 
 var functions = require('./routes/functions');
 
-console.log(process.argv[2]);
-
 // all environments
 app.set('port', process.env.PORT || 3000);
 app.set('views', __dirname + '/views');
@@ -65,8 +63,8 @@ mongoose.connect('mongodb://localhost/redismongodb', function(err) {
 var userSchema = mongoose.Schema({
   username: String,
   registerDate: {
-      type: Date,
-      default: Date.now
+    type: Date,
+    default: Date.now
   },
   pass: String,
   salt: String
