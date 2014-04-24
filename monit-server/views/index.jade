@@ -1,0 +1,13 @@
+extends layout
+
+block content
+  h1.text.center.margin_top_medium Live Server free memory
+  h5.text.center.margin_bottom_big With node.js, socket.io and chart.js
+
+  div.row.text.center
+    div.col12
+      canvas(id='myChart', width='900', height='400')
+
+  script(src='/javascripts/vendors/socket.io.js')
+  script(src='/javascripts/vendors/chart.js')
+  script(src='/javascripts/main.js')
